@@ -1,0 +1,36 @@
+# End to End Testing Backend api application
+# using deno testing
+
+name: API Testing
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "apps/api/**"
+
+jobs:
+  provide-api:
+    name: Start Backend API
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun Environment
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        working-directory: ./apps/api
+        run: bun install
+
+      - name: Setup Environment Variables
+        working-directory: ./apps/api
+        run: |
+          echo "${{ secrets.API_ENV_FILE }}" > .env
+
+      - name: E2E Testing
+        working-directory: ./apps/api
+        run: bun run test:e2e

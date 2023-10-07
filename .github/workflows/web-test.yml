@@ -1,0 +1,56 @@
+# End to End Testing web application
+# using cypress and provide the api
+# for local testing
+
+name: Web Testing
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "apps/web/**"
+
+jobs:
+  e2e-testing:
+    name: End to End Testing Web App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun Environment
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        working-directory: ./apps/web
+        run: bun i
+
+      - name: Setup Environment Variables
+        working-directory: ./apps/api
+        run: |
+          echo "${{ secrets.WEB_ENV_FILE }}" > .env
+
+      - name: E2E Testing Chrome
+        uses: cypress-io/github-action@v6
+        with:
+          working-directory: apps/web
+          browser: chrome
+          build: bun run build
+          start: bun run start
+          wait-on: "http://localhost:3000"
+
+      - name: Record Testing Screenshots
+        uses: actions/upload-artifact@v3
+        with:
+          name: testing-screenshots
+          path: cypress/screenshots
+          if-no-files-found: ignore
+
+      - name: Record Testing Videos
+        uses: actions/upload-artifact@v3
+        with:
+          name: testing-videos
+          path: cypress/videos
+          if-no-files-found: ignore

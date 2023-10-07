@@ -1,0 +1,56 @@
+# Deploy the web application
+# into the vercel as production
+#
+# ***** NOTE ******
+# This deployment need to setup some secrets
+
+name: Web Production
+
+# define the env for this workflows
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_WEB_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_WEB_PROJECT_ID }}
+
+# Oonly run this workflows if
+# the user start manual the actions
+# and push the code into the main branch
+on:
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - "apps/web/**"
+
+jobs:
+  update:
+    name: Update Web App
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun Environment
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Vercel CLI
+        working-directory: ./apps/web
+        run: bun install --global vercel@latest
+
+      - name: Install Dependencies
+        working-directory: ./apps/web
+        run: bun install
+
+      - name: Pull Vercel Environment Information
+        working-directory: ./apps/web
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build Project Artifacts
+        working-directory: ./apps/web
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+
+      - name: Deploy Project Artifacts to Vercel
+        working-directory: ./apps/web
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

@@ -1,0 +1,68 @@
+# Deploy the web application
+# into the deno deploy as production
+#
+# ***** NOTE ******
+# This deployment need to setup some secrets
+
+name: Api Production
+
+# Only run this workflows if
+# the user start manual the actions
+# and push the code into the main branch
+on:
+  workflow_dispatch:
+  # push:
+  #   branches:
+  #     - main
+  #   paths:
+  #     - "apps/api/**"
+
+env:
+  PULUMI_CONFIG_PASSPHRASE: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+  PULUMI_ACCESS_TOKEN: ${{ secrets.PULUMI_ACCESS_TOKEN }}
+
+jobs:
+  deploy:
+    name: Update API App
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Install Nitric CLI
+        uses: nitrictech/setup-nitric@v1
+        with:
+          version: 1.29.5
+
+      - name: Setup Pulumi Environment
+        uses: pulumi/setup-pulumi@v2
+
+      - name: Setup Bun Environment
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install Dependencies
+        working-directory: ./apps/api
+        run: bun install
+
+      - name: Create env file
+        working-directory: ./apps/api
+        run: |
+          echo "${{ secrets.API_ENV_FILE }}" > .env
+
+      - name: Deploy to production
+        working-directory: ./apps/api
+        run: nitric up -s prod -v0
